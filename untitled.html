@@ -1,0 +1,104 @@
+<!DOCTYPE html><html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Shuffle للأسماء</title>
+  <style>
+    body { font-family: sans-serif; background: #f8fafc; margin: 0; padding: 20px; }
+    .container { max-width: 700px; margin: auto; background: #fff; padding: 20px; border-radius: 12px; box-shadow: 0 2px 6px rgba(0,0,0,0.1); }
+    h1 { font-size: 20px; margin-bottom: 10px; }
+    input { padding: 8px; border: 1px solid #ccc; border-radius: 6px; flex: 1; }
+    button { padding: 8px 12px; border: none; border-radius: 6px; cursor: pointer; }
+    button.primary { background: #2563eb; color: #fff; }
+    button.danger { background: #dc2626; color: #fff; }
+    button.secondary { background: #f1f5f9; }
+    .list, .result { margin-top: 15px; }
+    .item { display: flex; justify-content: space-between; align-items: center; border: 1px solid #ddd; padding: 6px; border-radius: 6px; margin-bottom: 5px; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>مولد Shuffle للأسماء (حتى 15 اسم)</h1>
+    <div style="display:flex; gap:8px; margin-bottom:10px;">
+      <input id="nameInput" placeholder="اكتب اسم" />
+      <button class="primary" onclick="addName()">إضافة</button>
+    </div>
+    <div style="margin-bottom:10px;">
+      <button class="secondary" onclick="shuffleNames()">Shuffle</button>
+      <button class="danger" onclick="clearNames()">مسح الكل</button>
+      <button class="secondary" onclick="copyLink()">نسخ رابط المشاركة</button>
+    </div><h3>قائمة الأسماء</h3>
+<div id="nameList" class="list"></div>
+
+<h3>النتيجة (بعد Shuffle)</h3>
+<div id="result" class="result"></div>
+
+  </div>  <script>
+    const STORAGE_KEY = "shuffle_names_list";
+    let names = [];
+
+    // تحميل الأسماء من localStorage أو من الرابط
+    (function init(){
+      const params = new URLSearchParams(location.search);
+      const data = params.get("names");
+      if (data) {
+        try { names = JSON.parse(atob(decodeURIComponent(data))); } catch {}
+      } else {
+        const saved = localStorage.getItem(STORAGE_KEY);
+        if (saved) try { names = JSON.parse(saved); } catch {}
+      }
+      render();
+    })();
+
+    function save(){
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(names));
+    }
+
+    function addName(){
+      const input = document.getElementById("nameInput");
+      const val = input.value.trim();
+      if (!val) return alert("الاسم فارغ");
+      if (names.length >= 15) return alert("وصلت الحد الأقصى 15 اسم");
+      names.push(val);
+      input.value = "";
+      save();
+      render();
+    }
+
+    function removeName(i){
+      names.splice(i,1);
+      save();
+      render();
+    }
+
+    function clearNames(){
+      if (!confirm("هل تريد مسح الكل؟")) return;
+      names = [];
+      save();
+      render();
+      document.getElementById("result").innerHTML = "";
+    }
+
+    function shuffleNames(){
+      if (names.length === 0) return alert("لا يوجد أسماء");
+      const arr = [...names];
+      for(let i=arr.length-1;i>0;i--){
+        const j=Math.floor(Math.random()*(i+1));
+        [arr[i],arr[j]]=[arr[j],arr[i]];
+      }
+      document.getElementById("result").innerHTML = arr.map((n,i)=>`<div class='item'><div>${i+1}. ${n}</div></div>`).join("");
+    }
+
+    function copyLink(){
+      const url = location.origin + location.pathname + "?names=" + encodeURIComponent(btoa(JSON.stringify(names)));
+      navigator.clipboard.writeText(url).then(()=>alert("تم نسخ الرابط"))
+        .catch(()=>prompt("انسخ الرابط يدوياً:",url));
+    }
+
+    function render(){
+      document.getElementById("nameList").innerHTML = names.map((n,i)=>
+        `<div class='item'><div>${i+1}. ${n}</div><button class='danger' onclick='removeName(${i})'>حذف</button></div>`
+      ).join("");
+    }
+  </script></body>
+</html>
